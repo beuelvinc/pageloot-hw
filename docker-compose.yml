@@ -1,0 +1,35 @@
+version: '3.7'
+services:
+  db:
+    image: postgres:13
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${USER}
+      POSTGRES_PASSWORD: ${PASSWORD}
+      POSTGRES_DB: ${NAME}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${USER} -d ${NAME}"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  django:
+    image: myweb:v1
+    env_file:
+      - .env
+    build:
+      context: .
+    volumes:
+      - ./pageloot_project:/app  
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+
+      sh -c "cd /app && python manage.py migrate --no-input && python manage.py runserver 0.0.0.0:8000"
+
